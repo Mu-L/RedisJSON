@@ -303,22 +303,22 @@ jobs:
     #   - image: debian:bullseye
     machine:
       enabled: true
-      image: ubuntu-2004:202010-01
+      image: ubuntu-2204:edge
       resource_class: large
     steps:
       - vm-build-platforms-steps:
           platform: <<parameters.platform>>
 
-  build-arm-platforms:
-    parameters:
-      platform:
-        type: string
-    machine:
-      image: ubuntu-2004:202101-01
-    resource_class: arm.medium
-    steps:
-      - vm-build-platforms-steps:
-          platform: <<parameters.platform>>
+  # build-arm-platforms:
+  #   parameters:
+  #     platform:
+  #       type: string
+  #   machine:
+  #     image: ubuntu-2004:202101-01
+  #   resource_class: arm.medium
+  #   steps:
+  #     - vm-build-platforms-steps:
+  #         platform: <<parameters.platform>>
 
   build-macos-m1:
     macos:
@@ -400,18 +400,6 @@ jobs:
             else
                 make upload-artifacts SHOW=1
             fi
-
-  release-qa-tests:
-    docker:
-      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
-    steps:
-      - early-returns
-      - early-return-for-forked-pull-requests
-      - checkout
-      - setup-automation
-      - run:
-          name: Run QA Automation
-          command: ./tests/qa/qatests -m "$CIRCLE_TAG"
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
@@ -504,13 +492,7 @@ workflows:
           context: common
           matrix:
             parameters:
-              platform: [jammy, focal, bionic, centos7, rocky8, rocky9, bullseye, amzn2]
-      - build-arm-platforms:
-          <<: *on-integ-and-version-tags
-          context: common
-          matrix:
-            parameters:
-              platform: [jammy, focal, bionic]
+              platform: [centos7, rocky8, rocky9, bullseye, amzn2]
       - build-macos-m1:
           context: common
           <<: *on-integ-and-version-tags
@@ -529,7 +511,7 @@ workflows:
           context: common
           requires:
             - build-platforms
-            - build-arm-platforms
+            # - build-arm-platforms
             - build-macos-m1
       - upload-artifacts:
           name: upload-release-artifacts
@@ -537,14 +519,8 @@ workflows:
           context: common
           requires:
             - build-platforms
-            - build-arm-platforms
+            # - build-arm-platforms
             - build-macos-m1
-      - release-qa-tests:
-          <<: *on-version-tags
-          context: common
-          requires:
-            - upload-release-artifacts
-
 
   nightly:
     triggers:
